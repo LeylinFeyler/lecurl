@@ -46,10 +46,16 @@ int http_send_request(int sock, Url *url, int head_only)
     int len = snprintf(request, sizeof(request),
                        "%s %s HTTP/1.1\r\n"
                        "Host: %s\r\n"
-                       "User-Agent: mycurl/0.1\r\n"
+                       "User-Agent: lecurl/0.1\r\n"
+                       "Accept: */*\r\n"
                        "Connection: close\r\n"
                        "\r\n",
                        method, url->path, url->host);
+
+    if ((size_t)len >= sizeof(request)) {
+        fprintf(stderr, "request too long\n");
+        return -1;
+    }
 
     if (send(sock, request, len, 0) < 0)
     {
@@ -78,7 +84,11 @@ int http_read_response(int sock, const char *outfile, int include_headers, int h
     int headers_done = 0;
     int chunked = 0;
 
-    // first read headers line by line
+    // for HEAD requests, always include headers
+    if (head_only)
+        include_headers = 1;
+
+    // read headers line by line
     while (!headers_done)
     {
         int n = read_line(sock, buffer, sizeof(buffer));
@@ -88,9 +98,11 @@ int http_read_response(int sock, const char *outfile, int include_headers, int h
             write(fd, buffer, n);
 
         if (strcmp(buffer, "\r\n") == 0)
-            headers_done = 1; 
+        {
+            headers_done = 1; // empty line marks end of headers
+        }
 
-        // detect if response uses chunked transfer encoding
+        // detect chunked transfer encoding
         if (strncasecmp(buffer, "Transfer-Encoding:", 18) == 0 &&
             strstr(buffer, "chunked") != NULL)
         {
@@ -98,21 +110,24 @@ int http_read_response(int sock, const char *outfile, int include_headers, int h
         }
     }
 
+    // if HEAD, we are done after printing headers
     if (head_only)
     {
         if (outfile) close(fd);
-        return 0; 
+        return 0;
     }
 
+    // read body
     if (chunked)
     {
-        // read response body in chunks
         while (1)
         {
             int n = read_line(sock, buffer, sizeof(buffer));
             if (n <= 0) break;
-            int chunk_size = hex_to_int(buffer); // first line of each chunk is size in hex
+
+            int chunk_size = hex_to_int(buffer);
             if (chunk_size == 0) break; // last chunk
+
             int remaining = chunk_size;
             while (remaining > 0)
             {
