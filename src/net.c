@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -38,7 +40,7 @@ int dns_resolve(const char *host, char *ip_str)
     return 0;
 }
 
-int tcp_connect(const char *host, int port)
+int tcp_connect(const char *host, int port, int timeout)
 {
     char ip[INET_ADDRSTRLEN];
 
@@ -51,6 +53,8 @@ int tcp_connect(const char *host, int port)
         perror("socket");
         return -1;
     }
+
+    (void)timeout;
 
     struct sockaddr_in server;
     server.sin_family = AF_INET;

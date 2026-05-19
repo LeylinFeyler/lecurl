@@ -2,8 +2,19 @@
 #define HTTP_H
 
 #include "url.h"
+#include "cli.h"
 
-int http_send_request(int sock, Url *url, int head_only);
-int http_read_response(int sock, const char *outfile, int include_headers, int head_only);
+int http_send_request(
+    int sock,
+    Url *url,
+    CliOptions *opts
+);
+
+int http_read_response(
+    int sock,
+    const char *outfile,
+    int include_headers,
+    int head_only
+);
 
 #endif

@@ -15,15 +15,11 @@ static struct option long_options[]=
 
 static void init_opts(CliOptions *opts)
 {
+    memset(opts, 0, sizeof(*opts));
     opts->url = NULL;
     opts->output_file = NULL;
     opts->head_only = 0;
     opts->include_headers = 0;
-        memset(
-        opts,
-        0,
-        sizeof(*opts)
-    );
     opts->method="GET";
     opts->timeout=5;
     opts->retry_count=0;
