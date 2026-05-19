@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <ctype.h>
 #include "http.h"
+#include "cli.h"
 
 #define BUFFER_SIZE 4096
 
@@ -38,31 +39,47 @@ static int hex_to_int(const char *hex)
     return val;
 }
 
-int http_send_request(int sock, Url *url, int head_only)
+int http_send_request(int sock, Url *url, CliOptions *opts)
 {
-    char request[2048];
-    const char *method = head_only ? "HEAD" : "GET";
+    char request[4096];
 
     int len = snprintf(request, sizeof(request),
-                       "%s %s HTTP/1.1\r\n"
-                       "Host: %s\r\n"
-                       "User-Agent: lecurl/0.1\r\n"
-                       "Accept: */*\r\n"
-                       "Connection: close\r\n"
-                       "\r\n",
-                       method, url->path, url->host);
+        "%s %s HTTP/1.1\r\n"
+        "Host: %s\r\n"
+        "User-Agent: lecurl/0.1\r\n"
+        "Accept: */*\r\n",
+        opts->method,
+        url->path,
+        url->host
+    );
 
-    if ((size_t)len >= sizeof(request)) {
-        fprintf(stderr, "request too long\n");
-        return -1;
-    }
-
-    if (send(sock, request, len, 0) < 0)
+    for (int i = 0; i < opts->header_count; i++)
     {
-        perror("send");
-        return -1;
+        len += snprintf(request + len, sizeof(request) - len,
+            "%s\r\n",
+            opts->headers[i]
+        );
     }
 
+    if (opts->body)
+    {
+        len += snprintf(request + len, sizeof(request) - len,
+            "Content-Length: %ld\r\n",
+            strlen(opts->body)
+        );
+    }
+
+    len += snprintf(request + len, sizeof(request) - len, "\r\n");
+
+    if (opts->body)
+    {
+        snprintf(request + len, sizeof(request) - len,
+            "%s",
+            opts->body
+        );
+    }
+
+    send(sock, request, strlen(request), 0);
     return 0;
 }
 

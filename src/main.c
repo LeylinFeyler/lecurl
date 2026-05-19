@@ -23,9 +23,9 @@ int main(int argc, char **argv)
     {
         fprintf(stderr, "Failed to connect to %s:%d\n", url.host, url.port);
         return 1;
-    }
+    
 
-    if (http_send_request(sock, &url, opts.head_only) != 0)
+    if (http_send_request(sock, &url, &opts) != 0)
     {
         fprintf(stderr, "Failed to send HTTP request\n");
         close(sock);
