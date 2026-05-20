@@ -1,8 +1,7 @@
 #ifndef URL_PARSER_H
 #define URL_PARSER_H
 
-typedef struct
-{
+typedef struct {
     char scheme[16];
     char host[256];
     int port;

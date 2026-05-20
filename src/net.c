@@ -1,37 +1,34 @@
 #define _POSIX_C_SOURCE 200112L
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include "net.h"
 
-int dns_resolve(const char *host, char *ip_str)
-{
+int dns_resolve(const char *host, char *ip_str) {
     struct addrinfo hints;
     struct addrinfo *res;
     struct addrinfo *p;
-    
+
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;        
+    hints.ai_family   = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
     int status = getaddrinfo(host, NULL, &hints, &res);
-    if (status != 0)
-    {
+    if (status != 0) {
         fprintf(stderr, "DNS error: %s\n", gai_strerror(status));
         return -1;
     }
 
-    for (p = res; p != NULL; p = p->ai_next)
-    {
+    for (p = res; p != NULL; p = p->ai_next) {
         struct sockaddr_in *addr = (struct sockaddr_in *)p->ai_addr;
         inet_ntop(AF_INET, &(addr->sin_addr), ip_str, INET_ADDRSTRLEN);
         break;
@@ -44,8 +41,9 @@ int dns_resolve(const char *host, char *ip_str)
 int tcp_connect(const char *host, int port, int timeout) {
     char ip[INET_ADDRSTRLEN];
 
-    if (dns_resolve(host, ip) != 0)
+    if (dns_resolve(host, ip) != 0) {
         return -1;
+    }
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -55,7 +53,7 @@ int tcp_connect(const char *host, int port, int timeout) {
 
     struct timeval tv;
 
-    tv.tv_sec = timeout;
+    tv.tv_sec  = timeout;
     tv.tv_usec = 0;
 
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
@@ -63,7 +61,7 @@ int tcp_connect(const char *host, int port, int timeout) {
 
     struct sockaddr_in server;
     server.sin_family = AF_INET;
-    server.sin_port = htons(port);
+    server.sin_port   = htons(port);
 
     if (inet_pton(AF_INET, ip, &server.sin_addr) <= 0) {
         perror("inet_pton");

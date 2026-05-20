@@ -3,46 +3,36 @@
 #include <unistd.h>
 
 #include "cli.h"
-#include "url.h"
-#include "net.h"
 #include "http.h"
+#include "net.h"
+#include "url.h"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     CliOptions opts;
     Url url;
 
-    if (cli_parse(argc, argv, &opts) != 0)
+    if (cli_parse(argc, argv, &opts) != 0) {
         return 1;
+    }
 
-    if (url_parse(opts.url, &url) != 0)
+    if (url_parse(opts.url, &url) != 0) {
         return 1;
+    }
 
     int success = 0;
 
     for (int attempt = 0; attempt <= opts.retry_count; attempt++) {
-        int sock = tcp_connect(
-            url.host,
-            url.port,
-            opts.timeout
-        );
+        int sock = tcp_connect(url.host, url.port, opts.timeout);
 
         if (sock < 0) {
-            fprintf(stderr,
-                "connection attempt %d failed\n",
-                attempt + 1
-            );
+            fprintf(stderr, "connection attempt %d failed\n", attempt + 1);
 
             continue;
         }
 
         if (http_send_request(sock, &url, &opts) == 0) {
-            if (http_read_response(
-                    sock,
-                    opts.output_file,
-                    opts.include_headers,
-                    opts.head_only
-                ) == 0) {
+            if (http_read_response(sock, opts.output_file, opts.include_headers, opts.head_only) ==
+                0) {
                 success = 1;
                 close(sock);
                 break;

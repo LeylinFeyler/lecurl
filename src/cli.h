@@ -3,8 +3,7 @@
 
 #define MAX_HEADERS 32
 
-typedef struct
-{
+typedef struct {
     char *url;
     char *output_file;
 
