@@ -1,16 +1,20 @@
 # lecurl (C)
 
-A minimal `curl`-like HTTP client written in C.
+A small `curl`-like HTTP client written in C using raw sockets.
 
-* Supports `GET` and `HEAD` requests.
-* Can include headers with `-i`.
-* Can save output to file with `-o`.
+Features:
+
+* `GET`, `HEAD` and custom HTTP methods
+* Custom headers
+* Request body support
+* Basic authentication
+* Retry and timeout options
+* Save response to file
+* Chunked transfer decoding
 
 ---
 
 ## Build
-
-Compile the project:
 
 ```bash
 make
@@ -23,14 +27,42 @@ make
 Basic usage:
 
 ```bash
-./lecurl http://example.com        # GET request
-./lecurl -i http://example.com     # GET with headers
-./lecurl -I http://example.com     # HEAD request
-./lecurl -o page.html http://example.com  # Save output to file
+./lecurl <url>
+```
+
+Example:
+
+```bash
+./lecurl http://example.com
+```
+
+---
+
+## Usage
+
+```bash
+./lecurl [options] <url>
+```
+
+Options:
+
+```text
+-o <file>            write output to file
+-I                   HEAD request
+-i                   include response headers
+-X <method>          custom HTTP method
+-d <data>            request body
+-H <header>          custom header
+-u <user:pass>       basic auth
+-L                   follow redirects
+--connect-timeout N  connection timeout
+--retry N            retry count
+-h                   show help
 ```
 
 ---
 
 ## Notes
 
-* Now its only supports HTTP/1.0 and 1.1 (no HTTPS).
+* Currently supports HTTP/1.0 and HTTP/1.1
+* HTTPS is not supported yet
