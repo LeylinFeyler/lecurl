@@ -5,8 +5,10 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <ctype.h>
+
 #include "http.h"
 #include "cli.h"
+#include "base64.h"
 
 #define BUFFER_SIZE 4096
 
@@ -39,47 +41,62 @@ static int hex_to_int(const char *hex)
     return val;
 }
 
-int http_send_request(int sock, Url *url, CliOptions *opts)
-{
-    char request[4096];
+int http_send_request(int sock, Url *url, CliOptions *opts) {
+    char request[8192];
 
     int len = snprintf(request, sizeof(request),
         "%s %s HTTP/1.1\r\n"
         "Host: %s\r\n"
         "User-Agent: lecurl/0.1\r\n"
-        "Accept: */*\r\n",
+        "Accept: */*\r\n"
+        "Connection: close\r\n",
         opts->method,
         url->path,
         url->host
     );
 
-    for (int i = 0; i < opts->header_count; i++)
-    {
+    if (opts->body) {
+        len += snprintf(request + len, sizeof(request) - len,
+            "Content-Type: application/x-www-form-urlencoded\r\n"
+            "Content-Length: %ld\r\n",
+            strlen(opts->body)
+        );
+    }
+
+    if (opts->auth) {
+        char *encoded = base64_encode(opts->auth);
+
+        if (encoded) {
+            len += snprintf(request + len, sizeof(request) - len,
+                "Authorization: Basic %s\r\n",
+                encoded
+            );
+
+            free(encoded);
+        }
+    }
+
+    for (int i = 0; i < opts->header_count; i++) {
         len += snprintf(request + len, sizeof(request) - len,
             "%s\r\n",
             opts->headers[i]
         );
     }
 
-    if (opts->body)
-    {
-        len += snprintf(request + len, sizeof(request) - len,
-            "Content-Length: %ld\r\n",
-            strlen(opts->body)
-        );
-    }
-
     len += snprintf(request + len, sizeof(request) - len, "\r\n");
 
-    if (opts->body)
-    {
-        snprintf(request + len, sizeof(request) - len,
+    if (opts->body) {
+        len += snprintf(request + len, sizeof(request) - len,
             "%s",
             opts->body
         );
     }
 
-    send(sock, request, strlen(request), 0);
+    if (send(sock, request, len, 0) < 0) {
+        perror("send");
+        return -1;
+    }
+
     return 0;
 }
 
