@@ -7,6 +7,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -40,35 +41,37 @@ int dns_resolve(const char *host, char *ip_str)
     return 0;
 }
 
-int tcp_connect(const char *host, int port, int timeout)
-{
+int tcp_connect(const char *host, int port, int timeout) {
     char ip[INET_ADDRSTRLEN];
 
     if (dns_resolve(host, ip) != 0)
         return -1;
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-    {
+    if (sock < 0) {
         perror("socket");
         return -1;
     }
 
-    (void)timeout;
+    struct timeval tv;
+
+    tv.tv_sec = timeout;
+    tv.tv_usec = 0;
+
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     struct sockaddr_in server;
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, ip, &server.sin_addr) <= 0)
-    {
+    if (inet_pton(AF_INET, ip, &server.sin_addr) <= 0) {
         perror("inet_pton");
         close(sock);
         return -1;
     }
 
-    if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0)
-    {
+    if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
         perror("connect");
         close(sock);
         return -1;
